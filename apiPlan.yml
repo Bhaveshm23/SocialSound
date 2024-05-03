@@ -1,0 +1,360 @@
+openapi: 3.0.0
+info:
+  title: SocialSound API
+  version: 1.0.0
+  description: API for SocialSound, a dynamic social media platform for audio content management and sharing.
+servers: []
+tags:
+  - name: Users
+    description: User related operations
+  - name: Audios
+    description: Audios related operations
+components:
+  securitySchemes:
+      cookieAuth:         
+        type: apiKey
+        in: cookie
+        name: SESSIONID 
+  schemas:
+    Audio:
+      type: object
+      required:
+        - audioId
+        - userId
+        - parentAudioId
+        - title
+        - dateUploaded
+        - likes
+        - sound
+      properties:
+        audioId:
+          type: integer
+        userId:
+          type: string
+        parentAudioId:
+          type: integer
+        title:
+          type: string
+        dateUploaded:
+          type: string
+          format: date-time
+        likes:
+          type: integer
+        sound:
+          type: string
+    User:
+      type: object
+      required:
+        - userId
+        - username
+        - email
+        - bio
+        - profilePicture
+      properties:
+        userId:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        bio:
+          type: string
+        profilePicture:
+          type: string
+security:
+  - cookieAuth: []
+paths:
+  /signup:
+      post:
+        summary: Creates a new user and returns the unique identifier
+        tags:
+          - Users
+        security: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          '201':
+            description: User created successfully
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    userId:
+                      type: integer
+                      description: The unique identifier of the newly created user.
+          '400':
+            description: User could not be created successfully
+          '500':
+            description: Server error 
+  /signin:
+    post:
+      summary: Authenticates a user and returns a token
+      tags:
+        - Users
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/User'
+        '403':
+          description: Authentication failed
+    get:
+      summary: Check for authentication
+      tags:
+        -Users
+      security: []
+      responses:
+        '200':
+          description: Success
+        '403':
+          description: Failed
+  /signout:
+    delete:
+      summary: Signs a user out
+      tags:
+        - Users
+      security: []
+      responses:
+        '200':
+          description: Sign out successful
+        '403':
+          description: Sign out failed
+  /users/{userId}:
+    put:
+      summary: Updates user information
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          json/application:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '204':
+          description: User information updated successfully
+        '500':
+          description: User information could not be updated successfully
+        '401':
+          description: Unauthorized Access
+    get:
+      summary: Lists all audio files uploaded by a specific user and their information
+      tags:
+        - Audios
+        - Users
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of user's audio files
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  profilePicture:
+                    type: string
+                    format: byte
+                    description: Image file to upload
+                  bio:
+                    type: string
+                    format: byte
+                  sounds:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Audio'
+        '404': 
+          description: Something went wrong
+        '401':
+          description: Unauthorized Access
+        '500':
+          description: User information could not be fecthed successfully
+    post:
+      summary: Uploads a new audio file
+      tags:
+        - Audios
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Audio'
+              required:
+                - sound
+                - title
+      responses:
+        '201':
+          description: Audio file uploaded successfully
+        '400':
+          description: Unauthorized Access
+        '403':
+          description: Forbidden.
+        '500':
+          description: Audio file could not be uploaded successfully
+  /users/{userId}/audios/{audioId}:
+    delete:
+        summary: Deletes an audio file
+        tags:
+          - Audios
+        parameters:
+          - in: path
+            name: userId
+            required: true
+            schema:
+              type: integer
+          - in: path
+            name: audioId
+            required: true
+            schema:
+              type: integer
+        responses:
+          '204':
+            description: Audio file deleted successfully
+          '401':
+            description: Unauthorized Access
+          '403': 
+            description: Do not have permissions to delete this file
+          '500':
+            description: Audio File Could Not Be Deleted
+    put:
+        summary: Updates details of an existing sound
+        tags:
+          - Audios
+        parameters:
+          - in: path
+            name: userId
+            required: true
+            schema:
+              type: integer
+          - in: path
+            name: audioId
+            required: true
+            schema:
+              type: integer
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Audio'
+        responses:
+          '200':
+            description: Sound updated successfully
+          '500':
+            description: Something went wrong
+          '401':
+            description: Unauthorized Access
+  /audios:
+    get:
+      summary: Lists all audio files available on the platform
+      tags:
+        - Audios
+      responses:
+        '200':
+          description: List of all audio files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Audio'
+        '401':
+          description: Unauthorized Access
+        '500':
+          description: List of all audio files could not be retrieved.
+  /audios/{audioId}:
+    get:
+      summary: Get audio details
+      tags:
+        - Audios
+      parameters:
+        - in: path
+          name: audioId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: THe user's audio file
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sound:
+                    $ref: '#/components/schemas/Audio'
+                  replies:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Audio'
+        '500':
+          description: Something went wrong
+        '404':
+          description: Failure
+    put:
+      summary: Updates the like count of a sound
+      tags:
+        - Audios
+      parameters:
+        - in: path
+          name: audioId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                increment:
+                  type: boolean
+              required:
+                - increment
+      responses:
+        '200':
+          description: Likes updated successfully
+        '400':
+          description: Something went wrong
+        '401':
+          description: Unauthorized Access
